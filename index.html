@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Weekly Milk Delivery Bill</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+.page { width: 297mm; }
+
+/* HEADER */
+.company-name { font-size: 22px; font-weight: bold; display:block; }
+.sub-title { font-size: 14px; margin-bottom: 15px; }
+
+input, button, textarea { padding: 6px; margin: 4px; }
+button { cursor: pointer; }
+
+/* TABLE – NO BORDERS */
+table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+th, td { border: none; padding: 6px; text-align: center; vertical-align: top; }
+th { background: #f0f0f0; }
+
+.bill-total { font-weight: bold; background: #fafafa; }
+.note-box { width: 100%; height: 40px; font-size: 11px; }
+.action-btn { font-size: 11px; }
+.delivery-note { font-size: 10px; color: #555; }
+
+.due-box { margin-top: 15px; font-size: 13px; font-weight: bold; }
+
+/* PRINT SETTINGS */
+@media print {
+  button, input, label, textarea { display: none !important; }
+  body { margin: 0; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HEADER -->
+<input id="companyNameInput" class="company-name" placeholder="Company Name">
+<div id="companyNamePrint" class="company-name" style="display:none"></div>
+<div class="sub-title">Weekly Milk Delivery</div>
+
+<!-- DATE RANGE -->
+<label>Billing Start Week:</label>
+<input type="date" id="rangeStart">
+<label>Billing End Week:</label>
+<input type="date" id="rangeEnd">
+<br>
+
+<!-- PRODUCT INPUT -->
+<input id="productName" placeholder="Product Name" value="Fresh Milk">
+<input id="sku" placeholder="SKU" value="AFC5">
+<input id="itemName" placeholder="Item Name" value="Fresh Milk">
+<input id="packType" placeholder="Pack Type" value="Carton">
+<input id="packSize" placeholder="Pack Size" value="500ml">
+<input id="price" type="number" step="0.01" placeholder="Price" value="0.90">
+<input id="tueQty" type="number" placeholder="Tue Qty" value="30">
+<input id="friQty" type="number" placeholder="Fri Qty" value="0">
+<br>
+<button onclick="generateBills()">Generate Weekly Bills</button>
+
+<!-- TABLE -->
+<table>
+<thead>
+<tr>
+<th>WeekStarting</th>
+<th>WeekEnding</th>
+<th>ProductName</th>
+<th>ProductSKU</th>
+<th>ItemName</th>
+<th>PackTypeName</th>
+<th>PackSizeName</th>
+<th>Price</th>
+<th>TueQty</th>
+<th>FriQty</th>
+<th>ProductTotalPrice</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+<tfoot id="billFooter"></tfoot>
+</table>
+
+<!-- DUE AMOUNT -->
+<div class="due-box">
+<label>Due Amount:</label>
+<input id="dueAmount" type="number" step="0.01" placeholder="Enter due amount (optional)">
+<div id="duePrint" style="display:none"></div>
+</div>
+
+<br>
+<button onclick="window.print()">Print Bill</button>
+</div>
+
+<script>
+const DELIVERY_CHARGE = 1.50; // delivery charge per delivered week
+
+function generateBills() {
+    const body = document.getElementById('tableBody');
+    const footer = document.getElementById('billFooter');
+    body.innerHTML = '';
+    footer.innerHTML = '';
+
+    // Company name sync for print
+    const cname = document.getElementById('companyNameInput').value;
+    document.getElementById('companyNamePrint').innerText = cname;
+    document.getElementById('companyNamePrint').style.display = cname ? 'block' : 'none';
+
+    const startInput = document.getElementById('rangeStart').value;
+    const endInput = document.getElementById('rangeEnd').value;
+    if (!startInput || !endInput) return;
+
+    let current = new Date(startInput + 'T00:00:00');
+    const endRange = new Date(endInput + 'T00:00:00');
+
+    const price = Number(document.getElementById('price').value) || 0;
+    const tue = Number(document.getElementById('tueQty').value) || 0;
+    const fri = Number(document.getElementById('friQty').value) || 0;
+
+    while (current <= endRange) {
+        const weekStart = new Date(current);
+        const weekEnd = new Date(current);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        const milkTotal = price * (tue + fri);
+        const weekTotal = milkTotal + DELIVERY_CHARGE;
+
+        body.insertAdjacentHTML('beforeend', `
+<tr class="week-row product-row" data-week-total="${weekTotal}" data-delivered="1">
+    <td>${formatDate(weekStart)}</td>
+    <td>${formatDate(weekEnd)}</td>
+    <td>${productName.value}</td>
+    <td>${sku.value}</td>
+    <td>${itemName.value}</td>
+    <td>${packType.value}</td>
+    <td>${packSize.value}</td>
+    <td>${price.toFixed(2)}</td>
+    <td>${tue}</td>
+    <td>${fri}</td>
+    <td>-€ ${milkTotal.toFixed(2)}-</td>
+    <td rowspan="2"><button class="action-btn" onclick="markNotDelivered(this)">Mark Not Delivered</button></td>
+</tr>
+<tr class="delivery-row">
+    <td>${formatDate(weekStart)}</td>
+    <td>${formatDate(weekEnd)}</td>
+    <td>Delivery Charge</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td>${DELIVERY_CHARGE.toFixed(2)}</td>
+    <td>0</td>
+    <td>0</td>
+    <td>-€ ${DELIVERY_CHARGE.toFixed(2)}-</td>
+</tr>
+`);
+
+        current.setDate(current.getDate() + 7);
+    }
+
+    calculateGrandTotal();
+}
+
+function markNotDelivered(btn) {
+    const productRow = btn.closest('tr');
+    const deliveryRow = productRow.nextElementSibling;
+
+    // zero both product and delivery
+    productRow.dataset.delivered = '0';
+    productRow.dataset.weekTotal = '0';
+    productRow.querySelector('td:nth-child(11)').innerText = '-€ 0.00-';
+
+    if (deliveryRow && deliveryRow.classList.contains('delivery-row')) {
+        deliveryRow.querySelector('td:nth-child(11)').innerText = '-€ 0.00-';
+    }
+
+    btn.disabled = true;
+    btn.innerText = 'Not Delivered';
+    calculateGrandTotal();
+}
+
+function calculateGrandTotal() {
+    const footer = document.getElementById('billFooter');
+    let total = 0;
+    document.querySelectorAll('.week-row').forEach(row => {
+        total += Number(row.dataset.weekTotal || 0);
+    });
+
+    footer.innerHTML = `
+    <tr class="bill-total">
+        <td colspan="11">TOTAL BILL AMOUNT</td>
+        <td>-€ ${total.toFixed(2)}-</td>
+    </tr>`;
+
+    const dueInput = document.getElementById('dueAmount').value;
+    const duePrint = document.getElementById('duePrint');
+    if (dueInput && Number(dueInput) > 0) {
+        duePrint.style.display = 'block';
+        duePrint.innerHTML = `Due Amount: -€ ${Number(dueInput).toFixed(2)}-`;
+    } else {
+        duePrint.style.display = 'none';
+        duePrint.innerHTML = '';
+    }
+}
+
+function formatDate(d) {
+    return d.toLocaleDateString('en-GB') + ' 00:00:00';
+}
+</script>
+</body>
+</html>
