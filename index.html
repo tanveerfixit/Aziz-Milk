@@ -4,31 +4,40 @@
 <meta charset="UTF-8">
 <title>Weekly Milk Delivery Bill</title>
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; }
+body { font-family: Arial, sans-serif; margin: 10px 20px; }
 .page { width: 297mm; }
 
 /* HEADER */
-.company-name { font-size: 22px; font-weight: bold; display:block; }
-.sub-title { font-size: 14px; margin-bottom: 15px; }
+.company-name { font-size: 26px; font-weight: bold; display:block; }
+.sub-title { font-size: 16px; margin-bottom: 5px; }
 
-input, button, textarea { padding: 6px; margin: 4px; }
+input, button, textarea { padding: 5px; margin: 2px; font-size: 13px; }
 button { cursor: pointer; }
 
 /* TABLE – NO BORDERS */
-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
-th, td { border: none; padding: 6px; text-align: center; vertical-align: top; }
+table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+th, td { border: none; padding: 4px; text-align: center; vertical-align: top; }
 th { background: #f0f0f0; }
 
-.bill-total { font-weight: bold; background: #fafafa; }
-.note-box { width: 100%; height: 40px; font-size: 11px; }
-.action-btn { font-size: 11px; }
-.delivery-note { font-size: 10px; color: #555; }
+.bill-total { font-weight: bold; background: #fafafa; font-size: 15px; }
+.note-box { width: 100%; height: 35px; font-size: 12px; }
+.action-btn { font-size: 12px; }
+.delivery-note { font-size: 11px; color: #555; }
 
-.due-box { margin-top: 15px; font-size: 13px; font-weight: bold; }
+.due-box { margin-top: 8px; font-size: 15px; font-weight: bold; }
+
+/* PRODUCT MANAGER */
+.product-manager { margin-top: 10px; margin-bottom: 10px; padding: 8px; border: 1px solid #ccc; background: #f9f9f9; }
+.product-manager h3 { margin-top: 0; margin-bottom: 5px; font-size: 15px; }
+.product-list-item { display: flex; align-items: center; margin-bottom: 4px; }
 
 /* PRINT SETTINGS */
 @media print {
-  button, input, label, textarea { display: none !important; }
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+  button, input, label, textarea, .product-manager { display: none !important; }
   body { margin: 0; }
 }
 </style>
@@ -36,10 +45,23 @@ th { background: #f0f0f0; }
 <body>
 <div class="page">
 
-<!-- HEADER -->
-<input id="companyNameInput" class="company-name" placeholder="Company Name">
-<div id="companyNamePrint" class="company-name" style="display:none"></div>
-<div class="sub-title">Weekly Milk Delivery</div>
+<!-- HEADER & BANK DETAILS -->
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">
+  <div>
+    <input id="companyNameInput" class="company-name" placeholder="Company Name" value="Aziz Milk">
+    <div id="companyNamePrint" class="company-name" style="display:none"></div>
+    <div class="sub-title" style="margin-bottom: 0;">Weekly Milk Delivery</div>
+  </div>
+  <div class="bank-box" style="font-size: 15px; text-align: right;">
+    <label>Bank Details:</label>
+    <textarea id="bankDetails" style="width: 250px; height: 80px; text-align: right; resize: none; font-size: 13px;" placeholder="Enter Bank Details">Quin Road Milk
+IBAN: IE87AIBK93538732081084
+BIC: AIBKIE2D</textarea>
+    <div id="bankDetailsPrint" style="font-weight: bold; white-space: pre-wrap;">Quin Road Milk
+IBAN: IE87AIBK93538732081084
+BIC: AIBKIE2D</div>
+  </div>
+</div>
 
 <!-- DATE RANGE -->
 <label>Billing Start Week:</label>
@@ -48,33 +70,41 @@ th { background: #f0f0f0; }
 <input type="date" id="rangeEnd">
 <br>
 
-<!-- PRODUCT INPUT -->
-<input id="productName" placeholder="Product Name" value="Fresh Milk">
-<input id="sku" placeholder="SKU" value="AFC5">
-<input id="itemName" placeholder="Item Name" value="Fresh Milk">
-<input id="packType" placeholder="Pack Type" value="Carton">
-<input id="packSize" placeholder="Pack Size" value="500ml">
-<input id="price" type="number" step="0.01" placeholder="Price" value="0.90">
-<input id="tueQty" type="number" placeholder="Tue Qty" value="30">
-<input id="friQty" type="number" placeholder="Fri Qty" value="0">
-<br>
+<!-- PRODUCT MANAGER -->
+<div class="product-manager">
+  <h3>Products to Bill</h3>
+  <div id="productList">
+    <div class="product-list-item">
+      <input class="p-name" placeholder="Product Name" value="Light 1% 2L" style="width: 200px;">
+      <input class="p-price" type="number" step="0.01" placeholder="Unit Price" value="3.10" style="width: 80px;">
+      <input class="p-mon" type="number" placeholder="Mon Qty" value="1" style="width: 80px;">
+      <input class="p-thu" type="number" placeholder="Thu Qty" value="1" style="width: 80px;">
+      <button onclick="removeProductRow(this)">Remove</button>
+    </div>
+    <div class="product-list-item">
+      <input class="p-name" placeholder="Product Name" value="Fresh Milk 2L" style="width: 200px;">
+      <input class="p-price" type="number" step="0.01" placeholder="Unit Price" value="3.20" style="width: 80px;">
+      <input class="p-mon" type="number" placeholder="Mon Qty" value="6" style="width: 80px;">
+      <input class="p-thu" type="number" placeholder="Thu Qty" value="6" style="width: 80px;">
+      <button onclick="removeProductRow(this)">Remove</button>
+    </div>
+  </div>
+  <button onclick="addProductRow()">+ Add Another Product</button>
+</div>
+
 <button onclick="generateBills()">Generate Weekly Bills</button>
 
 <!-- TABLE -->
 <table>
 <thead>
 <tr>
-<th>WeekStarting</th>
-<th>WeekEnding</th>
-<th>ProductName</th>
-<th>ProductSKU</th>
-<th>ItemName</th>
-<th>PackTypeName</th>
-<th>PackSizeName</th>
+<th>Week Starting</th>
+<th>Week Ending</th>
+<th>Product</th>
+<th>Mon</th>
+<th>Thu</th>
+<th>Qty</th>
 <th>Price</th>
-<th>TueQty</th>
-<th>FriQty</th>
-<th>ProductTotalPrice</th>
 <th>Action</th>
 </tr>
 </thead>
@@ -83,10 +113,10 @@ th { background: #f0f0f0; }
 </table>
 
 <!-- DUE AMOUNT -->
-<div class="due-box">
-<label>Due Amount:</label>
-<input id="dueAmount" type="number" step="0.01" placeholder="Enter due amount (optional)">
-<div id="duePrint" style="display:none"></div>
+<div class="due-box" style="margin-top: 15px;">
+  <label>Due Amount:</label>
+  <input id="dueAmount" type="number" step="0.01" placeholder="Enter due amount (optional)">
+  <div id="duePrint" style="display:none"></div>
 </div>
 
 <br>
@@ -95,6 +125,23 @@ th { background: #f0f0f0; }
 
 <script>
 const DELIVERY_CHARGE = 1.50; // delivery charge per delivered week
+
+function addProductRow() {
+    const list = document.getElementById('productList');
+    list.insertAdjacentHTML('beforeend', `
+    <div class="product-list-item">
+      <input class="p-name" placeholder="Product Name" style="width: 200px;">
+      <input class="p-price" type="number" step="0.01" placeholder="Unit Price" style="width: 80px;">
+      <input class="p-mon" type="number" placeholder="Mon Qty" value="0" style="width: 80px;">
+      <input class="p-thu" type="number" placeholder="Thu Qty" value="0" style="width: 80px;">
+      <button onclick="removeProductRow(this)">Remove</button>
+    </div>
+    `);
+}
+
+function removeProductRow(btn) {
+    btn.parentElement.remove();
+}
 
 function generateBills() {
     const body = document.getElementById('tableBody');
@@ -107,6 +154,10 @@ function generateBills() {
     document.getElementById('companyNamePrint').innerText = cname;
     document.getElementById('companyNamePrint').style.display = cname ? 'block' : 'none';
 
+    // Bank details sync for print
+    const bdetails = document.getElementById('bankDetails').value;
+    document.getElementById('bankDetailsPrint').innerText = bdetails;
+
     const startInput = document.getElementById('rangeStart').value;
     const endInput = document.getElementById('rangeEnd').value;
     if (!startInput || !endInput) return;
@@ -114,66 +165,74 @@ function generateBills() {
     let current = new Date(startInput + 'T00:00:00');
     const endRange = new Date(endInput + 'T00:00:00');
 
-    const price = Number(document.getElementById('price').value) || 0;
-    const tue = Number(document.getElementById('tueQty').value) || 0;
-    const fri = Number(document.getElementById('friQty').value) || 0;
+    // Get list of products
+    const productItems = document.querySelectorAll('.product-list-item');
+    const products = Array.from(productItems).map(item => {
+        return {
+            name: item.querySelector('.p-name').value || 'Product',
+            price: Number(item.querySelector('.p-price').value) || 0,
+            mon: Number(item.querySelector('.p-mon').value) || 0,
+            thu: Number(item.querySelector('.p-thu').value) || 0
+        };
+    });
 
+    let weekIndex = 0;
     while (current <= endRange) {
         const weekStart = new Date(current);
         const weekEnd = new Date(current);
         weekEnd.setDate(weekEnd.getDate() + 6);
 
-        const milkTotal = price * (tue + fri);
-        const weekTotal = milkTotal + DELIVERY_CHARGE;
+        let weekProductRowsHtml = '';
+        let weekTotal = 0;
+        const currentWeekIndex = weekIndex;
 
-        body.insertAdjacentHTML('beforeend', `
-<tr class="week-row product-row" data-week-total="${weekTotal}" data-delivered="1">
-    <td>${formatDate(weekStart)}</td>
-    <td>${formatDate(weekEnd)}</td>
-    <td>${productName.value}</td>
-    <td>${sku.value}</td>
-    <td>${itemName.value}</td>
-    <td>${packType.value}</td>
-    <td>${packSize.value}</td>
-    <td>${price.toFixed(2)}</td>
-    <td>${tue}</td>
-    <td>${fri}</td>
-    <td>-€ ${milkTotal.toFixed(2)}-</td>
-    <td rowspan="2"><button class="action-btn" onclick="markNotDelivered(this)">Mark Not Delivered</button></td>
-</tr>
-<tr class="delivery-row">
-    <td>${formatDate(weekStart)}</td>
-    <td>${formatDate(weekEnd)}</td>
-    <td>Delivery Charge</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td>${DELIVERY_CHARGE.toFixed(2)}</td>
-    <td>0</td>
-    <td>0</td>
-    <td>-€ ${DELIVERY_CHARGE.toFixed(2)}-</td>
-</tr>
-`);
+        products.forEach((prod, pIdx) => {
+            const qty = prod.mon + prod.thu;
+            const itemTotal = prod.price * qty;
+            weekTotal += itemTotal;
 
+            weekProductRowsHtml += `
+            <tr class="product-row week-${currentWeekIndex}" data-week-total="${itemTotal}">
+                ${pIdx === 0 ? `<td rowspan="${products.length + 1}">${formatDate(weekStart)}</td><td rowspan="${products.length + 1}">${formatDate(weekEnd)}</td>` : ''}
+                <td>${prod.name}</td>
+                <td>${prod.mon}</td>
+                <td>${prod.thu}</td>
+                <td>${qty}</td>
+                <td>€ ${itemTotal.toFixed(2)}</td>
+                ${pIdx === 0 ? `<td rowspan="${products.length + 1}"><button class="action-btn" onclick="markWeekNotDelivered(${currentWeekIndex}, this)">Mark Not Delivered</button></td>` : ''}
+            </tr>`;
+        });
+
+        // Add delivery charge row for the week
+        weekTotal += DELIVERY_CHARGE;
+        weekProductRowsHtml += `
+        <tr class="delivery-row week-${currentWeekIndex}" data-delivery-charge="${DELIVERY_CHARGE}">
+            <td>Delivery Charge</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>€ ${DELIVERY_CHARGE.toFixed(2)}</td>
+        </tr>`;
+
+        body.insertAdjacentHTML('beforeend', weekProductRowsHtml);
         current.setDate(current.getDate() + 7);
+        weekIndex++;
     }
 
     calculateGrandTotal();
 }
 
-function markNotDelivered(btn) {
-    const productRow = btn.closest('tr');
-    const deliveryRow = productRow.nextElementSibling;
-
-    // zero both product and delivery
-    productRow.dataset.delivered = '0';
-    productRow.dataset.weekTotal = '0';
-    productRow.querySelector('td:nth-child(11)').innerText = '-€ 0.00-';
-
-    if (deliveryRow && deliveryRow.classList.contains('delivery-row')) {
-        deliveryRow.querySelector('td:nth-child(11)').innerText = '-€ 0.00-';
-    }
+function markWeekNotDelivered(weekIdx, btn) {
+    const rows = document.querySelectorAll(`.week-${weekIdx}`);
+    rows.forEach(row => {
+        if (row.classList.contains('product-row')) {
+            row.dataset.weekTotal = '0';
+            row.querySelector('td:nth-last-child(2)').innerText = '€ 0.00';
+        } else if (row.classList.contains('delivery-row')) {
+            row.dataset.deliveryCharge = '0';
+            row.querySelector('td:last-child').innerText = '€ 0.00';
+        }
+    });
 
     btn.disabled = true;
     btn.innerText = 'Not Delivered';
@@ -183,25 +242,33 @@ function markNotDelivered(btn) {
 function calculateGrandTotal() {
     const footer = document.getElementById('billFooter');
     let total = 0;
-    document.querySelectorAll('.week-row').forEach(row => {
+
+    document.querySelectorAll('.product-row').forEach(row => {
         total += Number(row.dataset.weekTotal || 0);
+    });
+    document.querySelectorAll('.delivery-row').forEach(row => {
+        total += Number(row.dataset.deliveryCharge || 0);
     });
 
     footer.innerHTML = `
     <tr class="bill-total">
-        <td colspan="11">TOTAL BILL AMOUNT</td>
-        <td>-€ ${total.toFixed(2)}-</td>
+        <td colspan="6" style="text-align: right;">TOTAL BILL AMOUNT:</td>
+        <td colspan="2" style="text-align: left; padding-left: 15px;">€ ${total.toFixed(2)}</td>
     </tr>`;
 
     const dueInput = document.getElementById('dueAmount').value;
     const duePrint = document.getElementById('duePrint');
     if (dueInput && Number(dueInput) > 0) {
         duePrint.style.display = 'block';
-        duePrint.innerHTML = `Due Amount: -€ ${Number(dueInput).toFixed(2)}-`;
+        duePrint.innerHTML = `Due Amount: € ${Number(dueInput).toFixed(2)}`;
     } else {
         duePrint.style.display = 'none';
         duePrint.innerHTML = '';
     }
+
+    // Dynamic bank details sync on total calculation in case user typed something
+    const bdetails = document.getElementById('bankDetails').value;
+    document.getElementById('bankDetailsPrint').innerText = bdetails;
 }
 
 function formatDate(d) {
